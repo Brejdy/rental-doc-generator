@@ -1,0 +1,24 @@
+﻿@model IEnumerable<najemci.Models.Nemovitost>
+
+<h2>Seznam nemovitostí</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Jméno</th>
+            <th>Adresa</th>
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Jmeno</td>
+                <td>@item.Adresa</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id">Detaily</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

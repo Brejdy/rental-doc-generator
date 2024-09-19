@@ -1,0 +1,54 @@
+﻿@model najemci.Models.Nemovitost
+
+<h4>@Model.Adresa</h4>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width: 100px; text-align:center;">Číslo bytu</th>
+            <th style="width: 300px;">Nájemník</th>
+            <th style="width: 300px;">Detail bytu</th>
+            <th>Odstranit byt</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var byt in Model.Byty)
+        {
+            <tr>
+                <td style="text-align:center;">@byt.Cislo</td>
+                <td>
+                    @if (byt.Najemnici.Any())
+                    {
+                        <ul>
+                            @foreach (var tenant in byt.Najemnici)
+                            {
+                                <li>@tenant.Jmeno</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p>Byt je prázdný!</p>
+                    }
+                </td>
+                <td>
+                    <a class="nav-link" asp-controller="Nemovitost" asp-action="DetailBytu" asp-route-id="@byt.Id">Detail Bytu</a>
+                </td>
+                <td>
+                    <form asp-action="OdstranitByt" asp-controller="Nemovitost" method="post" onsubmit="return confirmDelete();">
+                        <input type="hidden" name="id" value="@byt.Id" />
+                        <button type="submit" class="btn btn-danger">Odstranit</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="nav-link" asp-controller="Nemovitost" asp-action="NovyByt" asp-route-id="@Model.Id">Přidat Byt</a>
+
+    <script>
+        function confirmDelete() {
+            return confirm("Opravdu si přejete smazat tento byt?");
+        }
+    </script>

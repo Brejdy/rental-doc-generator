@@ -1,0 +1,91 @@
+﻿@model najemci.Models.Byt
+
+<h2>Upravit byt číslo @Model.Cislo v @Model.Nemovitost.Jmeno</h2>
+
+<form asp-action="UpravByt" asp-controller="Nemovitost" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="NemovitostId" />
+    <input type="hidden" asp-for="Cislo" />
+    <input type="hidden" asp-for="NajemSluzby" />
+
+    <div class="form-group">
+        <label><input type="checkbox" id="editNajem" onclick="toggleField('najemGroup')"> Upravit nájem</label>&emsp;
+        <label><input type="checkbox" id="editKauce" onclick="toggleField('kauceGroup')"> Upravit kauci</label>&emsp;
+        <label><input type="checkbox" id="editSluzby" onclick="toggleField('sluzbyGroup')"> Upravit služby</label>&emsp;
+        <label><input type="checkbox" id="editPatro" onclick="toggleField('patroGroup')"> Upravit patro</label>&emsp;
+        <label><input type="checkbox" id="editRozloha" onclick="toggleField('rozlohaGroup')"> Upravit rozlohu</label>&emsp;
+        <label><input type="checkbox" id="editMistnosti" onclick="toggleField('mistnostiGroup')"> Upravit dispozici</label><br />
+    </div>
+
+    <div id="najemGroup" class="form-group" style="display:none;">
+        <label asp-for="Najem" class="control-label"></label>
+        <input asp-for="Najem" class="form-control" />
+        <span asp-validation-for="Najem" class="text-danger"></span>
+    </div>
+
+    <div id="kauceGroup" class="form-group" style="display:none;">
+        <label asp-for="Kauce" class="control-label"></label>
+        <input asp-for="Kauce" class="form-control" />
+        <span asp-validation-for="Kauce" class="text-danger"></span>
+    </div>
+
+    <div id="sluzbyGroup" class="form-group" style="display:none;">
+        <label asp-for="Sluzby" class="control-label"></label>
+        <input asp-for="Sluzby" class="form-control" />
+        <span asp-validation-for="Sluzby" class="text-danger"></span>
+    </div>
+
+    <div id="patroGroup" class="form-group" style="display:none;">
+        <label asp-for="Patro" class="control-label"></label>
+        <input asp-for="Patro" class="form-control" />
+        <span asp-validation-for="Patro" class="text-danger"></span>
+    </div>
+
+    <div id="rozlohaGroup" class="form-group" style="display:none;">
+        <label asp-for="Rozloha" class="control-label"></label>
+        <input asp-for="Rozloha" class="form-control" />
+        <span asp-validation-for="Rozloha" class="text-danger"></span>
+    </div>
+
+    <div id="mistnostiGroup" class="form-group" style="display:none;">
+        <label asp-for="Mistnosti" class="control-label"></label>
+        <input asp-for="Mistnosti" class="form-control" />
+        <span asp-validation-for="Mistnosti" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Upravit" class="btn btn-primary" />
+    </div>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Funkce pro zobrazení/skrytí polí formuláře
+        function toggleField(fieldId) {
+            var fieldGroup = document.getElementById(fieldId);
+            if (fieldGroup.style.display === "none") {
+                fieldGroup.style.display = "block";
+            } else {
+                fieldGroup.style.display = "none";
+            }
+        }
+    </script>
+}

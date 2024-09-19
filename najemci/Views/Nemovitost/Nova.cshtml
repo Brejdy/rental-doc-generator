@@ -1,0 +1,37 @@
+﻿@model najemci.Models.Nemovitost
+
+<h2>Přidat novou nemovitost</h2>
+
+<form asp-action="Nova" method="post">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <label asp-for="Jmeno" class="control-label"></label>
+        <input asp-for="Jmeno" class="form-control" />
+        <span asp-validation-for="Jmeno" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Adresa" class="control-label"></label>
+        <input asp-for="Adresa" class="form-control" />
+        <span asp-validation-for="Adresa" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Přidat" class="btn btn-primary" />
+    </div>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

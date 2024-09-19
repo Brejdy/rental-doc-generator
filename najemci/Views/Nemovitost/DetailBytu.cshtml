@@ -1,0 +1,58 @@
+﻿@model najemci.Models.Byt
+
+
+<h4>@Model.Nemovitost.Jmeno - Byt: @Model.Cislo</h4>
+
+<div>
+    <p><strong>Výše nájmu:</strong> @Model.Najem Kč &emsp;  
+    <strong>Služby:</strong> @Model.Sluzby Kč &emsp;
+    <strong>Nájem + Služby:</strong> @Model.NajemSluzby Kč &emsp;
+    <strong>Kauce:</strong> @Model.Kauce Kč &emsp;
+    <strong>Patro:</strong> @Model.Patro &emsp;
+    <strong>Dispozice:</strong> @Model.Mistnosti &emsp;
+    <strong>Rozloha:</strong> @Model.Rozloha m<sup>2</sup></p>
+    <p><strong>Nájemníci:</strong></p>
+        @if (Model.Najemnici.Any())
+        {
+            <table>               
+                <thead>
+                    <th>Jméno</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Datum narození</th>
+                    <th>Rodné číslo</th>
+                    <th>Číslo OP / Pasu</th>
+                    <th>Nájem Od</th>
+                    <th>Číslo účtu</th>
+                </thead>
+                <tbody>
+                    @foreach (var data in Model.Najemnici)
+                    {
+                        <tr>                           
+                            <td>@data.Jmeno</td>
+                            <td>@data.Email</td>
+                            <td>@data.Telefon</td>
+                            <td>@(data.DatumNarozeni.HasValue ? data.DatumNarozeni.Value.ToString("dd.MM.yyyy") : "Neuvedeno")</td>
+                            <td>@data.RodneCislo</td>
+                            <td>@data.CisloOP</td>
+                            <td>@(data.DatumNarozeni.HasValue ? data.DatumNarozeni.Value.ToString("dd.MM.yyyy") : "Neuvedeno")</td>
+                            <td>@data.CisloUctu</td>                          
+                        </tr>
+                    }
+                </tbody>
+            </table>    
+        }
+        else
+        {
+            <p>Byt je prázdný!</p>
+        }
+</div>
+
+<table>
+    <tr>
+        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="UpravByt" asp-route-id="@Model.Id">Upravit Byt</a></td>
+        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="NovyNajemnik" asp-route-id="@Model.Id">Přidej Nájemníka</a></td>
+        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="UpravNajemnika" asp-route-id="@Model.Id">Uprav Nájemníka</a></td>
+    </tr>
+</table>
+

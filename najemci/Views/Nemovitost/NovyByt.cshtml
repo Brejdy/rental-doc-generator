@@ -1,0 +1,74 @@
+﻿@model najemci.Models.Byt
+
+<h2>Přidat nový byt</h2>
+
+<form asp-action="NovyByt" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="NemovitostId"/>
+    
+    <div class="form-group">
+        <label asp-for="Cislo" class="control-label"></label>
+        <input asp-for="Cislo" class="form-control"/>
+        <span asp-validation-for="Cislo" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Najem" class="control-label"></label>
+        <input asp-for="Najem" class="form-control"/>
+        <span asp-validation-for="Najem" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Kauce" class="control-label"></label>
+        <input asp-for="Kauce" class="form-control"/>
+        <span asp-validation-for="Kauce" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="Sluzby" class="control-label"></label>
+        <input asp-for="Sluzby" class="form-control"/>
+        <span asp-validation-for="Sluzby" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Patro" class="control-label"></label>
+        <input asp-for="Patro" class="form-control"/>
+        <span asp-validation-for="Patro" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Rozloha" class="control-label"></label>
+        <input asp-for="Rozloha" class="form-control"/>
+        <span asp-validation-for="Rozloha" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Mistnosti" class="control-label"></label>
+        <input asp-for="Mistnosti" class="form-control"/>
+        <span asp-validation-for="Mistnosti" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <input type="submit" value="Přidat" class="btn btn-primary"
+    </div>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
