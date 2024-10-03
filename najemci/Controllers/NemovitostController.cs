@@ -24,7 +24,7 @@ namespace najemci.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            var nemovitosti = await _context.Nemovitosti.Include(n=>n.Byty).ThenInclude(n=>n.Najemnici).FirstOrDefaultAsync(n=>n.Id == id);
+            var nemovitosti = await _context.Nemovitosti.Include(n=>n.Byty.OrderBy(b=>b.Cislo)).ThenInclude(n=>n.Najemnici).FirstOrDefaultAsync(n=>n.Id == id);
 
             if (nemovitosti == null) 
             { 
@@ -193,6 +193,7 @@ namespace najemci.Controllers
 
             return View(model);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> NovyNajemnik(int id, [Bind("BytId,Jmeno,Email,Telefon,DatumNarozeni,NajemOd,RodneCislo,CisloUctu,RoleNajemnika,CisloOP")] Najemnik najemnik)
@@ -228,6 +229,51 @@ namespace najemci.Controllers
                 Console.WriteLine(ex.StackTrace);
                 return StatusCode(500, "Chyba při ukládání do databáze: " + ex.Message);
             }
+        }
+        [HttpGet]
+        public async Task<IActionResult> UpravNajemnika(int id)
+        {
+            var najemnik = _context.Najemnici.Include(n => n.Byt).FirstOrDefault(n => n.Id == id);
+
+            if (najemnik == null)
+            {
+                return NotFound();
+            }
+
+            return View(najemnik);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpravNajemnika(int id, [Bind("Id, BytId,Jmeno,Email,Telefon,DatumNarozeni,RodneCislo,CisloUctu,NajemOd,RoleNajemnika,CisloOP")] Najemnik updatedNajemnik)
+        {
+            if (id != updatedNajemnik.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                _context.Najemnici.Update(updatedNajemnik);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction("DetailBytu", new { id = updatedNajemnik.BytId });
+            }
+            return View(updatedNajemnik);
+        }
+        [HttpPost]
+        public IActionResult OdstranitNajemnika(int id)
+        {
+            var najemnik = _context.Najemnici.Find(id);
+            if (najemnik == null)
+            {
+                return NotFound();
+            }
+
+            _context.Najemnici.Remove(najemnik);
+            _context.SaveChanges();
+
+            return RedirectToAction("DetailBytu", new { id = najemnik.BytId });
         }
     }
 }

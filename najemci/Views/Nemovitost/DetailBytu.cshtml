@@ -24,6 +24,7 @@
                     <th>Číslo OP / Pasu</th>
                     <th>Nájem Od</th>
                     <th>Číslo účtu</th>
+                    <th>Akce</th>
                 </thead>
                 <tbody>
                     @foreach (var data in Model.Najemnici)
@@ -35,12 +36,50 @@
                             <td>@(data.DatumNarozeni.HasValue ? data.DatumNarozeni.Value.ToString("dd.MM.yyyy") : "Neuvedeno")</td>
                             <td>@data.RodneCislo</td>
                             <td>@data.CisloOP</td>
-                            <td>@(data.DatumNarozeni.HasValue ? data.DatumNarozeni.Value.ToString("dd.MM.yyyy") : "Neuvedeno")</td>
-                            <td>@data.CisloUctu</td>                          
+                            <td>@(data.NajemOd.HasValue ? data.NajemOd.Value.ToString("dd.MM.yyyy") : "Neuvedeno")</td>
+                            <td>@data.CisloUctu</td>
+                            <td>
+                                <a class="nav-link" asp-controller="Nemovitost" asp-action="UpravNajemnika" asp-route-id="@data.Id">Uprav Nájemníka</a>
+                            </td>
                         </tr>
                     }
                 </tbody>
-            </table>    
+            </table>  
+            
+            <hr />
+            <hr />
+
+            <table>
+                <thead>
+                    <th> </th>
+                    <th>Nájemní smlouva</th>
+                    <th>Předávací protokol</th>
+                    <th>Evidenční list</th>
+                    <th>Dodatek o prodloužení nájmu</th>
+                    <th>Dohoda o ukončení nájmu</th>
+                    <th>Výpověď z nájmu</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PDF</td>
+                        <td><a href="@Url.Action("NSPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                        <td><a href="@Url.Action("PPPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                        <td><a href="@Url.Action("ELPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                        <td><a href="@Url.Action("DPNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                        <td><a href="@Url.Action("DUNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                        <td><a href="@Url.Action("VNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
+                    </tr>
+                    <tr>
+                        <td>Word/Excel</td>
+                        <td><a href="@Url.Action("NSWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                        <td><a href="@Url.Action("PPWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                        <td><a href="@Url.Action("ELExcel", "Word", new { bytId = Model.Id} )">Stáhnout Excel</a></td>
+                        <td><a href="@Url.Action("DPNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                        <td><a href="@Url.Action("DUNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                        <td><a href="@Url.Action("VNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                    </tr>
+                </tbody>
+            </table>
         }
         else
         {
@@ -48,11 +87,13 @@
         }
 </div>
 
+<hr />
+<hr />
+
 <table>
     <tr>
         <td><a class="nav-link" asp-controller="Nemovitost" asp-action="UpravByt" asp-route-id="@Model.Id">Upravit Byt</a></td>
-        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="NovyNajemnik" asp-route-id="@Model.Id">Přidej Nájemníka</a></td>
-        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="UpravNajemnika" asp-route-id="@Model.Id">Uprav Nájemníka</a></td>
+        <td><a class="nav-link" asp-controller="Nemovitost" asp-action="NovyNajemnik" asp-route-id="@Model.Id">Přidej Nájemníka</a></td>   
     </tr>
 </table>
 

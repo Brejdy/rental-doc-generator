@@ -12,6 +12,14 @@ namespace najemci.Models
         [Display(Name = "Adresa nemovitosti")]
         [Required(ErrorMessage = "Uveď adresu nemovitosti")]
         public string Adresa { get; set; } = string.Empty;
+        [Display(Name = "Číslo popisné")]
+        public int CisloPopisne { get; set; }
+        [Display(Name = "Část obce")]
+        public string Obec { get; set; } = string.Empty;
+        [Display(Name = "LV")]
+        public string LV { get; set; }
+        [Display(Name = "Parcela")]
+        public string Parcela {  get; set; }
 
         //navigace k bytům
         public virtual ICollection<Byt> Byty { get; set; } = new HashSet<Byt>();
