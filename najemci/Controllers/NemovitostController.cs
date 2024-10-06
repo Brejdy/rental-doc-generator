@@ -198,8 +198,8 @@ namespace najemci.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> NovyNajemnik(int id, [Bind("BytId,Jmeno,Email,Telefon,DatumNarozeni,NajemOd,RodneCislo,CisloUctu,RoleNajemnika,CisloOP")] Najemnik najemnik)
         {
-            try
-            {
+            //try
+            //{
                 if (ModelState.IsValid)
                 {
                     if (najemnik.BytId == 0)
@@ -222,13 +222,13 @@ namespace najemci.Controllers
                     return View(najemnik);
                 }
                 return View(najemnik);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-                return StatusCode(500, "Chyba při ukládání do databáze: " + ex.Message);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex.Message);
+            //    Console.WriteLine(ex.StackTrace);
+            //    return StatusCode(500, "Chyba při ukládání do databáze: " + ex.Message);
+            //}
         }
         [HttpGet]
         public async Task<IActionResult> UpravNajemnika(int id)

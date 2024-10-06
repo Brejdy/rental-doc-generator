@@ -25,15 +25,15 @@ namespace najemci.Models
 
         [Required(AllowEmptyStrings = true)]
         [Display(Name = "Rozloha")]
-        public string Rozloha { get; set; } = string.Empty;  
+        public string? Rozloha { get; set; }  
 
         [Required(AllowEmptyStrings = true)]
         [Display(Name = "Patro + PP/NP")]
-        public string Patro { get; set; } = string.Empty;
+        public string? Patro { get; set; }
 
         [Required(AllowEmptyStrings = true)]
         [Display(Name = "Dispozice / Rozložení místností")]
-        public string Mistnosti { get; set; } = string.Empty; 
+        public string? Mistnosti { get; set; }
         
         //navigační vlastnost
         [ValidateNever]

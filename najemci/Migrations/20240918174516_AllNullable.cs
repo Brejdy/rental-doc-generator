@@ -19,14 +19,6 @@ namespace najemci.Migrations
                 oldClrType: typeof(int),
                 oldType: "int",
                 oldNullable: true);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Najemnici_Byty_BytId",
-                table: "Najemnici",
-                column: "BytId",
-                principalTable: "Byty",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
@@ -39,13 +31,6 @@ namespace najemci.Migrations
                 nullable: true,
                 oldClrType: typeof(int),
                 oldType: "int");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Najemnici_Byty_BytId",
-                table: "Najemnici",
-                column: "BytId",
-                principalTable: "Byty",
-                principalColumn: "Id");
         }
     }
 }
