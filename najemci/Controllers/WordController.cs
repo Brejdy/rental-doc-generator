@@ -4,6 +4,8 @@ using Xceed.Words.NET;
 using Xceed.Document.NET;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
+using System.Text;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 namespace najemci.Controllers
 {
@@ -14,6 +16,14 @@ namespace najemci.Controllers
         {
             _context = context;
         }
+
+        private readonly IWebHostEnvironment _environment;
+
+        public WordController(IWebHostEnvironment environment)
+        {
+            _environment = environment;
+        }
+
         public IActionResult DPNWord(int bytId)
         {
             var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
@@ -31,144 +41,99 @@ namespace najemci.Controllers
             string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
             string nazevSouboru = $"DodatekSmlouvy_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
 
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "Prodlouzeni.docx");         
+
+            StringBuilder mamka = new StringBuilder();
+            mamka.AppendLine("Lenka Bradáčová");
+            mamka.AppendLine("datum narození: 22.5.1968");
+            mamka.AppendLine("trvale bytem: Javorová 241, 252 44 Dolní Jirčany ");
+            mamka.AppendLine("a");
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    if (!string.IsNullOrWhiteSpace(n.Jmeno))
+                    {
+                        najemnikInfo.AppendLine($"{n.Jmeno}");
+                    }
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.Email))
+                    {
+                        najemnikInfo.AppendLine($"Email: {n.Email}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.Telefon))
+                    {
+                        najemnikInfo.AppendLine($"Tel.: {n.Telefon}");
+                    }
+                    if (n.CisloOP.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Číslo občanského průkazu: {n.CisloOP}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.CisloUctu))
+                    {
+                        najemnikInfo.AppendLine($"Číslo účtu: {n.CisloUctu}");
+                    }
+
+                    najemnikInfo.AppendLine($"");
+                }
+            }
+
             using (MemoryStream ms = new MemoryStream())
             {
                 using (var document = DocX.Create(ms))
                 {
-                    document.InsertParagraph("Dodatek k nájemní smlouvě").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
-                    document.InsertParagraph("podle § 2235 a násl. zákona č. 89/2012 Sb., občanský zákoník, v platném znění").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
-                    document.InsertParagraph("(dále jen „Občanský zákoník“)").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
-                    document.InsertParagraph("(dále jen „Dodatek“)").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
-                    document.InsertParagraph("Michal Bradáč").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("datum narození: 25.1.1996").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("trvale bytem: Javorová 241, 252 44 Dolní Jirčany").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("a").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("Jan Bradáč").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("datum narození: 18.8.1998").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("trvale bytem: Javorová 241, 252 44 Dolní Jirčany").Font("Times New Roman").FontSize(12);
-
-                    if (nemovId <= 3)
+                    if (nemovId == 2)
                     {
-                        document.InsertParagraph("Lenka Bradáčová").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph("datum narození: 22.05.1968").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph("trvale bytem: Javorová 241, 252 44 Dolní Jirčany").Font("Times New Roman").FontSize(12);
-                    }
-
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-
-                    if (nemovId >= 4)
-                    {
-                        document.InsertParagraph("tel.: 720 389 260").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph("e-mail: nadpahorkem24@gmail.com").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph($"č. účtu: 816846033/0800, vedený u České spořitelny, variabilní symbol: {cisloBytu}").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    }
-                    else if (nemovId == 3)
-                    {
-                        document.InsertParagraph("e-mail: nadpahorkem24@gmail.com").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph($"č. účtu: 229263108/0300, vedený u ČSOB, variabilní symbol: {cisloBytu}").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    }
-                    else if (nemovId == 2)
-                    {
-                        document.InsertParagraph("e-mail: pripotocni31@gmail.com").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph($"č. účtu: 133936558/0300, vedený u ČSOB, variabilní symbol: {cisloBytu}").Font("Times New Roman").FontSize(12);
-                        document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    }
-
-                    document.InsertParagraph("(dále též „Pronajímatel“)").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("a").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-
-                    foreach (var n in byt.Najemnici)
-                    {
-                        if (n.RoleNajemnika == Models.Role.Najemnik)
-                        {
-                            if (!string.IsNullOrWhiteSpace(n.Jmeno))
-                            {
-                                document.InsertParagraph($"{n.Jmeno}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (n.DatumNarozeni.HasValue)
-                            {
-                                document.InsertParagraph($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (!string.IsNullOrWhiteSpace(n.RodneCislo))
-                            {
-                                document.InsertParagraph($"Rodné číslo: {n.RodneCislo}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (!string.IsNullOrWhiteSpace(n.Email))
-                            {
-                                document.InsertParagraph($"Email: {n.Email}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (!string.IsNullOrWhiteSpace(n.Telefon))
-                            {
-                                document.InsertParagraph($"Tel.: {n.Telefon}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (n.CisloOP.HasValue)
-                            {
-                                document.InsertParagraph($"Číslo občanského průkazu: {n.CisloOP}").Font("Times New Roman").FontSize(12);
-                            }
-                            if (!string.IsNullOrWhiteSpace(n.CisloUctu))
-                            {
-                                document.InsertParagraph($"Číslo účtu: {n.CisloUctu}").Font("Times New Roman").FontSize(12);
-                            }
-
-                            document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                        }
-                    }
-
-                    document.InsertParagraph("(dále též „Nájemce“)").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("(Pronajímatel a Nájemce dále též společně jako „smluvní strany“)").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("uzavírají níže uvedeného dne, měsíce a roku tento Dodatek:").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("1. Úvodní ustanovení").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph($"1.1 Smluvní strany uzavřely dne {puvodniNajem?.ToString("dd.MM.yyyy")} nájemní smlouvu, na základě, které Pronajímatel pronajal Nájemci byt č. {byt.Cislo}, na adrese {byt.Nemovitost.Adresa} (dále též „Nájemní smlouva“).").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph($"1.2 Doba trvání nájmu byla v Nájemní smlouvě sjednána na dobu určitou, a to do {konecNajmu?.ToString("dd.MM.yyyy")}.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("2. Dohoda o změně Nájemní smlouvy").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph($"2.1 Smluvní strany se dohodly, že doba trvání nájmu sjednaná v Nájemní smlouvě se na základě tohoto Dodatku prodlužuje o další rok, a to do {datumProdlouzeni?.ToString("dd.MM.yyyy")}.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("2.2 Ostatní ujednání Nájemní smlouvy nejsou tímto Dodatkem dotčena.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("3. Závěrečná ustanovení").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("3.1 Tento Dodatek nabývá platnosti a účinnosti dnem jeho uzavření.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("3.2 Tento Dodatek je sepsán ve dvou stejnopisech, přičemž Pronajímatel a Nájemce obdrží po jednom stejnopisu.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph("3.3 Každá ze smluvních stran prohlašuje, že tento Dodatek uzavírá svobodně a vážně, že považuje obsah tohoto Dodatku za určitý a srozumitelný a že jsou jí známy všechny skutečnosti, jež jsou pro uzavření tohoto Dodatku rozhodující.").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph(" ").Font("Times New Roman").FontSize(12);
-                    document.InsertParagraph($"V Praze dne {datumPodpisu.ToString("dd.MM.yyyy")}").Font("Times New Roman").FontSize(12);
-
-                    var podpisovaTabulka = document.AddTable(2, 2);
-                    podpisovaTabulka.Alignment = Alignment.center;
-                    podpisovaTabulka.SetWidths(new float[] { 300f, 300f });
-
-                    podpisovaTabulka.SetBorder(TableBorderType.InsideH, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-                    podpisovaTabulka.SetBorder(TableBorderType.InsideV, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-                    podpisovaTabulka.SetBorder(TableBorderType.Top, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-                    podpisovaTabulka.SetBorder(TableBorderType.Bottom, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-                    podpisovaTabulka.SetBorder(TableBorderType.Left, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-                    podpisovaTabulka.SetBorder(TableBorderType.Right, new Border(BorderStyle.Tcbs_none, 0, 0, Color.White));
-
-                    podpisovaTabulka.Rows[0].Cells[0].Paragraphs[0].Append("____________________").Alignment = Alignment.center;
-
-                    podpisovaTabulka.Rows[0].Cells[1].Paragraphs[0].Append("____________________").Alignment = Alignment.center;
-
-                    if (nemovId == 4 || nemovId == 5)
-                    {
-                        podpisovaTabulka.Rows[1].Cells[0].Paragraphs[0].Append("Michal Bradáč a Jan Bradáč").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
+                        document.ReplaceText("[EMAIL]", "pripotocni31@gmail.com");
                     }
                     else
                     {
-                        podpisovaTabulka.Rows[1].Cells[0].Paragraphs[0].Append("Lenka Bradáčová, Michal Bradáč a Jan Bradáč").Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
+                        document.ReplaceText("[EMAIL]", "nadpahorkem24@gmail.com");
                     }
 
-                    podpisovaTabulka.Rows[1].Cells[1].Paragraphs[0].Append(jmenaNajemcu).Font("Times New Roman").FontSize(12).Alignment = Alignment.center;
+                    if (nemovId == 3)
+                    {
+                        document.ReplaceText("[KONTO]", "229263108/0300, vedený u ČSOB");
+                    }
+                    else if (nemovId == 2)
+                    {
+                        document.ReplaceText("[KONTO]", "133936558/0300, vedený u ČSOB");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[KONTO]", "816846033/0800, vedený u České spořitelny");
+                    }
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[NAJEMNIK]", najemnikInfo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa);
+                    document.ReplaceText("[KONECNAJMU]", konecNajmu?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[DATUMPRODLOUZENI]", datumProdlouzeni?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[NAJEMOD]", puvNajem.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[DATUMPODPISU]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[JMENANAJEMCU]", jmenaNajemcu);
+                    document.ReplaceText("[TEL]", "720 389 260");
 
-                    document.InsertParagraph(" ").SpacingAfter(20);
-                    document.InsertTable(podpisovaTabulka);
+                    if (nemovId == 2 || nemovId == 3)
+                    {
+                        document.ReplaceText("<!- PRIPO/PAHO ->", mamka.ToString());
+                        document.ReplaceText("<!-PODPIS->", "Lenka Bradáčová a ");
+                    }
+                    else
+                    {
+                        document.ReplaceText("<!- PRIPO/PAHO ->", "");
+                        document.ReplaceText("<!-PODPIS->", "");
+                    }
 
-                    document.Save();
+                    document.SaveAs(ms);
                 }
 
                 byte[] fileContent = ms.ToArray();

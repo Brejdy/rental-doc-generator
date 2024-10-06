@@ -6,18 +6,6 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 
-//public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-//{
-//    var defaultCulture = new CultureInfo("cs-CZ");
-//    var localizationOptions = new RequestLocalizationOptions
-//    {
-//        DefaultRequestCulture = new RequestCulture(defaultCulture),
-//        SupportedCultures = new List<CultureInfo> { defaultCulture },
-//        SupportedUICultures = new List<CultureInfo> { defaultCulture }
-//    };
-//    app.UseRequestLocalization(localizationOptions);
-//}
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -45,6 +33,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Auth}/{action=Login}/{id?}");
 
 app.Run();

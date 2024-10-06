@@ -15,7 +15,6 @@ namespace najemci
 
             var sb = new StringBuilder();
 
-            // Zpracování stovek tisíc
             if (cislo >= 100000)
             {
                 int stovkyTisic = cislo / 100000;
@@ -23,21 +22,19 @@ namespace najemci
                 cislo %= 100000;
             }
 
-            // Zpracování desítek tisíc
             if (cislo >= 20000)
             {
                 int desitkyTisic = cislo / 10000;
                 sb.Append(desitky[desitkyTisic] + " ");
                 cislo %= 10000;
             }
-            else if (cislo >= 10000) // Pro čísla 10000–19999 použijeme "teens"
+            else if (cislo >= 10000)
             {
                 int teensTisic = (cislo / 1000) % 10;
                 sb.Append(teens[teensTisic] + " tisíc ");
                 cislo %= 1000;
             }
 
-            // Zpracování tisíců
             if (cislo >= 1000)
             {
                 int tisice = cislo / 1000;
@@ -56,7 +53,6 @@ namespace najemci
                 cislo %= 1000;
             }
 
-            // Zpracování stovek
             if (cislo >= 100)
             {
                 int sto = cislo / 100;
@@ -64,7 +60,6 @@ namespace najemci
                 cislo %= 100;
             }
 
-            // Zpracování desítek a "teen"
             if (cislo >= 20)
             {
                 int deset = cislo / 10;
@@ -77,7 +72,6 @@ namespace najemci
                 cislo = 0;
             }
 
-            // Zpracování jednotek
             if (cislo > 0)
             {
                 sb.Append(jednotky[cislo] + " ");

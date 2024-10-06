@@ -16,7 +16,7 @@ namespace najemci.Models
         public int CisloPopisne { get; set; }
         [Display(Name = "Část obce")]
         public string Obec { get; set; } = string.Empty;
-        [Display(Name = "LV")]
+        [Display(Name = "List Vlastníků")]
         public string LV { get; set; }
         [Display(Name = "Parcela")]
         public string Parcela {  get; set; }

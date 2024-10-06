@@ -59,16 +59,7 @@
                     <th>Dohoda o ukončení nájmu</th>
                     <th>Výpověď z nájmu</th>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>PDF</td>
-                        <td><a href="@Url.Action("NSPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                        <td><a href="@Url.Action("PPPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                        <td><a href="@Url.Action("ELPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                        <td><a href="@Url.Action("DPNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                        <td><a href="@Url.Action("DUNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                        <td><a href="@Url.Action("VNPdf", "Dokumenty", new { bytId = Model.Id })">Stáhnout PDF</a></td>
-                    </tr>
+                <tbody>                   
                     <tr>
                         <td>Word/Excel</td>
                         <td><a href="@Url.Action("NSWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
