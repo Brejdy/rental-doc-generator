@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Drawing;
 using System.Text;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Identity.Client;
 
 namespace najemci.Controllers
 {
@@ -409,6 +411,744 @@ namespace najemci.Controllers
                 return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
             }
         }
+        public IActionResult PPWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
 
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"PredavaciProtokol_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "PredavaciProtokol.docx");
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            int pocetOsob = 0;
+            foreach (var n in byt.Najemnici)
+            {
+                pocetOsob++;
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2)
+                    {
+                        document.ReplaceText("[PREDAVAJICI]", "Michal Bradáč");
+                        document.ReplaceText("[NAROZENI]", "25.1.1996");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[PREDAVAJICI]", "Jan Bradáč");
+                        document.ReplaceText("[NAROZENI]", "19.8.1998");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[POCETOSOB]", pocetOsob.ToString());
+                    document.ReplaceText("[DATUMPODPISU]", datumPodpisu.ToString("dd.MM.yyyy"));
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+        public IActionResult DUNWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"DohodaUkonceniNajmu_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "DohodaUkonceni.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUMPODPISU]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[KAUCEMIN]", snizKauce.ToString());
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+        public IActionResult UDWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"UznaniDluhu_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "UznaniDluhu.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    if (nemovId == 3)
+                    {
+                        document.ReplaceText("[KONTO]", "229263108/0300, vedený u ČSOB");
+                    }
+                    else if (nemovId == 2)
+                    {
+                        document.ReplaceText("[KONTO]", "133936558/0300, vedený u ČSOB");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[KONTO]", "816846033/0800, vedený u České spořitelny");
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUMPODPISU]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+                    document.ReplaceText("[JMENO]", najemce.Jmeno.ToString());
+
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+        public IActionResult VNWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"Vypoved_z_najmu_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "Vypoved.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[PRONAJIMATEL]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUM]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+                    document.ReplaceText("[JMENO]", najemce.Jmeno.ToString());
+                    document.ReplaceText("[TEL]", najemce.Telefon.ToString());
+
+                    if(nemovId == 2 ||  nemovId == 3)
+                        document.ReplaceText("<!-PODPIS->", "Mgr. Lenka Bradáčová");
+                    else
+                        document.ReplaceText("<!-PODPIS->", " ");
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+
+        public IActionResult OSNWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"OznameniSkonceniNajmu_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "OznameniSkonceniNajmu.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[MAJITELE]", "Mgr. Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[MAJITELE]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUM]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+
+        public IActionResult ZNWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"ZvyseniNajmu_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "ZvyseniNajmu.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+            int prirazka = byt.Najem / 10;
+            int novyNajem = byt.Najem + prirazka;
+            int novyCelkem = novyNajem + byt.Sluzby;
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[MAJITELE]", "Mgr. Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[MAJITELE]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUM]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+                    document.ReplaceText("[JMENO]", najemce.Jmeno.ToString());
+                    document.ReplaceText("[NOVYNAJ]", novyNajem.ToString());
+                    document.ReplaceText("[NOVYCELKEM]", novyCelkem.ToString());
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+        public IActionResult DVWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"Dohoda_o_Vyklizeni_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "DohodaVyklizeni.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+            int prirazka = byt.Najem / 10;
+            int novyNajem = byt.Najem + prirazka;
+            int novyCelkem = novyNajem + byt.Sluzby;
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[MAJITELE]", "Mgr. Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[MAJITELE]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUM]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+                    document.ReplaceText("[JMENO]", najemce.Jmeno.ToString());
+                    document.ReplaceText("[NOVYNAJ]", novyNajem.ToString());
+                    document.ReplaceText("[NOVYCELKEM]", novyCelkem.ToString());
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
+
+        public IActionResult VDWord(int bytId)
+        {
+            var byt = _context.Byty.Include(b => b.Nemovitost).Include(b => b.Najemnici).FirstOrDefault(b => b.Id == bytId);
+
+            var nemovId = byt.NemovitostId;
+            var cisloBytu = byt.Cislo;
+
+            var najemce = byt.Najemnici.FirstOrDefault();
+            var puvodniNajem = najemce?.NajemOd;
+            var puvNajem = najemce?.NajemOd ?? DateTime.Now;
+            var konecNajmu = puvodniNajem.HasValue ? puvodniNajem.Value.AddYears(1) : (DateTime?)null;
+            DateTime datumPodpisu = DateTime.Now;
+            DateTime? datumProdlouzeni = new DateTime(DateTime.Now.Year, puvNajem.Month, puvNajem.Day);
+            datumProdlouzeni = datumProdlouzeni.Value.AddYears(1);
+            string jmenaNajemcu = string.Join(", ", byt.Najemnici.Where(n => n.RoleNajemnika == Models.Role.Najemnik).Select(n => n.Jmeno));
+            string nazevSouboru = $"Vystraha_{najemce.Jmeno.Replace(" ", "_").Replace(",", "")}.docx";
+            string templatePath = Path.Combine(_environment.WebRootPath, "Templates", "Vystraha.docx");
+            int lastDayMonth = DateTime.DaysInMonth(datumPodpisu.Year, datumPodpisu.Month);
+            DateTime konecMesice = new DateTime(datumPodpisu.Year, datumPodpisu.Month, lastDayMonth);
+            int snizKauce = byt.Kauce - 5000;
+
+            StringBuilder najemnikInfo = new StringBuilder();
+            foreach (var n in byt.Najemnici)
+            {
+                if (n.RoleNajemnika == Models.Role.Najemnik)
+                {
+                    najemnikInfo.AppendLine(n.Jmeno);
+                    if (n.DatumNarozeni.HasValue)
+                    {
+                        najemnikInfo.AppendLine($"Datum narození: {n.DatumNarozeni?.ToString("dd.MM.yyyy")}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(n.RodneCislo))
+                    {
+                        najemnikInfo.AppendLine($"Rodné číslo: {n.RodneCislo}");
+                    }
+                    najemnikInfo.AppendLine(" ");
+                }
+            }
+
+            int prirazka = byt.Najem / 10;
+            int novyNajem = byt.Najem + prirazka;
+            int novyCelkem = novyNajem + byt.Sluzby;
+
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (var document = DocX.Load(templatePath))
+                {
+                    if (nemovId == 2 || 3 == nemovId)
+                    {
+                        document.ReplaceText("[MAJITELE]", "Mgr. Lenka Bradáčová, Michal Bradáč a Jan Bradáč");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[MAJITELE]", "Michal Bradáč a Jan Bradáč");
+                    }
+
+                    var najemnikPlaceholder = document.Paragraphs.FirstOrDefault(p => p.Text.Contains("[NAJEMNIK]"));
+                    if (najemnikPlaceholder != null)
+                    {
+                        var najemnikParagraph = najemnikPlaceholder.InsertParagraphAfterSelf(najemnikInfo.ToString()).Font("Aptos").FontSize(12);
+                        najemnikParagraph.Alignment = Alignment.left;
+
+                        najemnikPlaceholder.Remove(false);
+                    }
+
+                    if (nemovId == 3)
+                    {
+                        document.ReplaceText("[KONTO]", "229263108/0300, vedený u ČSOB");
+                    }
+                    else if (nemovId == 2)
+                    {
+                        document.ReplaceText("[KONTO]", "133936558/0300, vedený u ČSOB");
+                    }
+                    else
+                    {
+                        document.ReplaceText("[KONTO]", "816846033/0800, vedený u České spořitelny");
+                    }
+
+                    document.ReplaceText("[NAJEMOD]", najemce.NajemOd?.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[CISLOBYTU]", byt.Cislo.ToString());
+                    document.ReplaceText("[ADRESA]", byt.Nemovitost.Adresa.ToString());
+                    document.ReplaceText("[PATRO]", byt.Patro.ToString());
+                    document.ReplaceText("[CISLOPOPISNE]", byt.Nemovitost.CisloPopisne.ToString());
+                    document.ReplaceText("[PARCELA]", byt.Nemovitost.Parcela.ToString());
+                    document.ReplaceText("[OBEC]", byt.Nemovitost.Obec.ToString());
+                    document.ReplaceText("[LV]", byt.Nemovitost.LV.ToString());
+                    document.ReplaceText("[DATUM]", datumPodpisu.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KONECNAJMU]", konecMesice.ToString("dd.MM.yyyy"));
+                    document.ReplaceText("[KAUCE]", byt.Kauce.ToString());
+                    document.ReplaceText("[ROZLOHA]", byt.Rozloha.ToString());
+                    document.ReplaceText("[DISPOZICE]", byt.Mistnosti.ToString());
+                    document.ReplaceText("[NAJEM]", byt.Najem.ToString());
+                    document.ReplaceText("[SLUZBY]", byt.Sluzby.ToString());
+                    document.ReplaceText("[NAJEMSLUZBY]", byt.NajemSluzby.ToString());
+                    document.ReplaceText("[JMENO]", najemce.Jmeno.ToString());
+                    document.ReplaceText("[NOVYNAJ]", novyNajem.ToString());
+                    document.ReplaceText("[NOVYCELKEM]", novyCelkem.ToString());
+
+
+                    document.SaveAs(ms);
+                }
+                byte[] fileContent = ms.ToArray();
+                return File(fileContent, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", nazevSouboru);
+            }
+        }
     }
 }
+
+
+
+

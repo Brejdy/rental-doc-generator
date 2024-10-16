@@ -51,23 +51,29 @@
 
             <table>
                 <thead>
-                    <th> </th>
                     <th>Nájemní smlouva</th>
                     <th>Předávací protokol</th>
-                    <th>Evidenční list</th>
+                    <th>Uznání dluhu</th>
                     <th>Dodatek o prodloužení nájmu</th>
                     <th>Dohoda o ukončení nájmu</th>
                     <th>Výpověď z nájmu</th>
+                    <th>Oznámení o skončení nájmu</th>
+                    <th>Zvýšení nájemného</th>
+                    <th>Dohoda o vyklizení</th>
+                    <th>Výstraha na dluh</th>
                 </thead>
                 <tbody>                   
                     <tr>
-                        <td>Word/Excel</td>
-                        <td><a href="@Url.Action("NSWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
-                        <td><a href="@Url.Action("PPWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
-                        <td><a href="@Url.Action("ELExcel", "Word", new { bytId = Model.Id} )">Stáhnout Excel</a></td>
-                        <td><a href="@Url.Action("DPNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
-                        <td><a href="@Url.Action("DUNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
-                        <td><a href="@Url.Action("VNWord", "Word", new { bytId = Model.Id} )">Stáhnout Word</a></td>
+                        <td><a href="@Url.Action("NSWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("PPWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("UDWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("DPNWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("DUNWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("VNWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("OSNWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("ZNWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("DVWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
+                        <td><a href="@Url.Action("VDWord", "Word", new { bytId = Model.Id} )">Stáhnout</a></td>
                     </tr>
                 </tbody>
             </table>
